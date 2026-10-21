@@ -3,7 +3,7 @@ import EncomiendaService from '../services/EncomiendaService';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const EncomiendaApp = () => {
-    const [codigoBusqueda, setCodigoBusqueda] = useState('DINO100');
+    const [codigoBusqueda, setCodigoBusqueda] = useState('');
     const [encomienda, setEncomienda] = useState(null);
     const [error, setError] = useState('');
 
