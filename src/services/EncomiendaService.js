@@ -17,6 +17,17 @@ class EncomiendaService {
     actualizarEstado(codigo, datos) {
         return axios.put(`${BASE_URL}/${codigo}`, datos);
     }
+
+    // 4. Listar todas las encomiendas (GET)
+    listarEncomiendas() {
+        return axios.get(BASE_URL);
+    }
+
+    // 5. Eliminar encomienda por código (DELETE)
+    eliminarEncomienda(codigo) {
+        return axios.delete(`${BASE_URL}/${codigo}`);
+    }
+
 }
 
 export default new EncomiendaService();

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import EncomiendaService from '../services/EncomiendaService';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
@@ -36,27 +36,87 @@ const EncomiendaApp = () => {
     // Registrar nueva encomienda (POST)
     const handleRegistrar = (e) => {
         e.preventDefault();
-        EncomiendaService.registrarEncomienda({ destinatario, direccion })
+
+        if (!destinatario.trim() || !direccion.trim()) {
+            setMensajePost('Debes completar todos los campos.');
+            return;
+        }
+
+        EncomiendaService.registrarEncomienda({
+            destinatario: destinatario.trim(),
+            direccion: direccion.trim()
+        })
             .then(response => {
-                setMensajePost(`¡Registrado con éxito! Código: ${response.data.codigoSeguimiento}`);
+                setMensajePost(
+                    `¡Registrado con éxito! Código: ${response.data.codigoSeguimiento}`
+                );
                 setCodigoBusqueda(response.data.codigoSeguimiento);
                 setDestinatario('');
                 setDireccion('');
+                cargarEncomiendas();
             })
-            .catch(err => setMensajePost('Error al registrar encomienda.'));
+            .catch(() => {
+                setMensajePost('Error al registrar encomienda.');
+            });
     };
 
     // Actualizar estado (PUT)
     const handleActualizar = (e) => {
         e.preventDefault();
-        EncomiendaService.actualizarEstado(codigoBusqueda, { estado: nuevoEstado, ubicacion })
+
+        if (!codigoBusqueda.trim() || !ubicacion.trim()) {
+            setMensajePut('Debes ingresar el código y la ubicación.');
+            return;
+        }
+
+        EncomiendaService.actualizarEstado(codigoBusqueda.trim(), {
+            estado: nuevoEstado,
+            ubicacion: ubicacion.trim()
+        })
             .then(response => {
                 setMensajePut('Estado actualizado correctamente.');
                 setEncomienda(response.data.encomienda);
                 setUbicacion('');
+                cargarEncomiendas();
             })
-            .catch(err => setMensajePut('Error al actualizar estado.'));
+            .catch(() => {
+                setMensajePut('Error al actualizar estado.');
+            });
     };
+    
+    const handleEliminar = () => {
+        if (!codigoBusqueda.trim()) {
+            setError('Ingresa un código de seguimiento.');
+            return;
+        }
+
+        EncomiendaService.eliminarEncomienda(codigoBusqueda)
+            .then(() => {
+                cargarEncomiendas();
+                setEncomienda(null);
+                setError('');
+                setMensajePut('Encomienda eliminada correctamente.');
+            })
+            .catch(() => {
+                setMensajePut('Error al eliminar la encomienda.');
+            });
+    };
+    
+    const [encomiendas, setEncomiendas] = useState([]);
+
+    const cargarEncomiendas = () => {
+        EncomiendaService.listarEncomiendas()
+            .then(response => {
+                setEncomiendas(response.data);
+            })
+            .catch(error => {
+                console.log('Error al listar encomiendas:', error);
+            });
+    };
+
+    useEffect(() => {
+        cargarEncomiendas();
+    }, []);
 
     return (
         <div style={{ backgroundColor: '#f6f2ff', minHeight: '100vh', paddingBottom: '50px' }}>
@@ -113,6 +173,43 @@ const EncomiendaApp = () => {
                     </div>
                 )}
 
+                {/* LISTADO DE ENCOMIENDAS */}
+                <div className="card shadow-sm p-4 mb-4 border-0">
+                    <h4 className="fw-bold mb-3">
+                        Listado de Encomiendas
+                    </h4>
+
+                    <button
+                        className="btn btn-primary mb-3"
+                        onClick={cargarEncomiendas}
+                    >
+                        Actualizar Listado
+                    </button>
+
+                    <div className="table-responsive">
+                        <table className="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Destinatario</th>
+                                    <th>Dirección</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {encomiendas.map(enc => (
+                                    <tr key={enc.id}>
+                                        <td>{enc.codigo}</td>
+                                        <td>{enc.destinatario}</td>
+                                        <td>{enc.direccion}</td>
+                                        <td>{enc.estado}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
                 {/* PANELES DE ACCIÓN (POST Y PUT) */}
                 <div className="row g-4">
                     {/* POST */}
@@ -163,6 +260,15 @@ const EncomiendaApp = () => {
                                     required
                                 />
                                 <button className="btn w-100 text-white" style={{ backgroundColor: '#6f42c1' }} type="submit">Actualizar Estado</button>
+                                
+                                <button
+                                    type="button"
+                                    className="btn btn-danger w-100 mt-2"
+                                    onClick={handleEliminar}
+                                >
+                                    Eliminar Encomienda
+                                </button>
+
                             </form>
                             {mensajePut && <p className="text-success mt-2 fw-bold">{mensajePut}</p>}
                         </div>
